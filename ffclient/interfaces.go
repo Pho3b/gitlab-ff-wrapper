@@ -1,4 +1,4 @@
-package client
+package ffclient
 
 import (
 	"github.com/Unleash/unleash-client-go/v4"

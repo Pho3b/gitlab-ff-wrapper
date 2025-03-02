@@ -1,11 +1,11 @@
-package client
+package ffclient
 
 import (
 	"github.com/Unleash/unleash-client-go/v4/api"
 	"github.com/h2non/gock"
-	"github.com/pho3b/gitlab-ff-wrapper/client/config"
 	pubconst "github.com/pho3b/gitlab-ff-wrapper/constants"
 	"github.com/pho3b/gitlab-ff-wrapper/enums"
+	"github.com/pho3b/gitlab-ff-wrapper/ffclient/ffconfig"
 	"github.com/pho3b/gitlab-ff-wrapper/tests"
 	"github.com/pho3b/tiny-logger/logs"
 	"github.com/stretchr/testify/assert"
@@ -112,7 +112,7 @@ func TestInitWithCustomConfigGivenEnvironmentType(t *testing.T) {
 	gock.New(MockProjectUrl).Post("/client/register").Reply(200)
 	gock.New(MockProjectUrl).Get("/client/features").Reply(200).JSON(api.FeatureResponse{})
 
-	InitWithConfig(config.ClientConfig{
+	InitWithConfig(ffconfig.ClientConfig{
 		EnvironmentType:             "staging",
 		EnvironmentTypeVariableName: "MY_CUSTOM_VARIABLE",
 		ProjectUrl:                  MockProjectUrl,
@@ -138,7 +138,7 @@ func TestNotGivenEnvironmentType(t *testing.T) {
 	gock.New(MockProjectUrl).Post("/client/register").Reply(200)
 	gock.New(MockProjectUrl).Get("/client/features").Reply(200).JSON(api.FeatureResponse{})
 
-	InitWithConfig(config.ClientConfig{
+	InitWithConfig(ffconfig.ClientConfig{
 		EnvironmentTypeVariableName: "MY_CUSTOM_VARIABLE",
 		ProjectUrl:                  MockProjectUrl,
 		ProjectId:                   MockProjectId,
@@ -165,7 +165,7 @@ func TestNotGivenEnvironmentTypeAndSetCustomEnvVariable(t *testing.T) {
 	gock.New(MockProjectUrl).Get("/client/features").Reply(200).JSON(api.FeatureResponse{})
 	os.Setenv("MY_CUSTOM_VARIABLE", enums.Development.ToString())
 
-	InitWithConfig(config.ClientConfig{
+	InitWithConfig(ffconfig.ClientConfig{
 		EnvironmentTypeVariableName: "MY_CUSTOM_VARIABLE",
 		ProjectUrl:                  MockProjectUrl,
 		ProjectId:                   MockProjectId,
@@ -193,7 +193,7 @@ func TestNotGivenEnvironmentTypeAndSetClientEnvType(t *testing.T) {
 	gock.New(MockProjectUrl).Post("/client/register").Reply(200)
 	gock.New(MockProjectUrl).Get("/client/features").Reply(200).JSON(api.FeatureResponse{})
 
-	InitWithConfig(config.ClientConfig{
+	InitWithConfig(ffconfig.ClientConfig{
 		EnvironmentType: enums.Client,
 		ProjectUrl:      MockProjectUrl,
 		ProjectId:       MockProjectId,
@@ -223,7 +223,7 @@ func TestInitWithEmptyOrMissingProjectIDOrUrlType(t *testing.T) {
 	Init("", MockProjectId)
 	assert.Nil(t, clientInstance)
 
-	InitWithConfig(config.ClientConfig{
+	InitWithConfig(ffconfig.ClientConfig{
 		EnvironmentType:             "",
 		Logger:                      nil,
 		EnvironmentTypeVariableName: "",
@@ -232,7 +232,7 @@ func TestInitWithEmptyOrMissingProjectIDOrUrlType(t *testing.T) {
 	})
 	assert.Nil(t, clientInstance)
 
-	InitWithConfig(config.ClientConfig{
+	InitWithConfig(ffconfig.ClientConfig{
 		EnvironmentType:             "",
 		Logger:                      nil,
 		EnvironmentTypeVariableName: "",

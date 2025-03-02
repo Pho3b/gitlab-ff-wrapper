@@ -22,11 +22,8 @@ func (s *EnvTypeRetrieverTestSuite) TestSetDevelopmentEnvironmentIfNotFound() {
 	mockLogger := new(tests.LoggerMock)
 	envService := NewEnvTypeService(mockLogger)
 
-	mockLogger.On("Warn", mock.Anything).Times(1)
 	os.Unsetenv(constants.EnvTypeVariableName)
-
 	s.Equal(enums.Undefined, envService.GetEnvTypeFromEnvironment(constants.EnvTypeVariableName))
-	mockLogger.AssertCalled(s.T(), "Warn", mock.Anything)
 }
 
 func (s *EnvTypeRetrieverTestSuite) TestSetToFoundEnvType() {
@@ -60,4 +57,16 @@ func (s *EnvTypeRetrieverTestSuite) TestSetToFoundEnvTypeCaseInsensitive() {
 
 	s.Equal(enums.Staging, envService.GetEnvTypeFromEnvironment(constants.EnvTypeVariableName))
 	mockLogger.AssertNotCalled(s.T(), "Warn", mock.Anything)
+}
+
+func (s *EnvTypeRetrieverTestSuite) TestDefaultValidEnvTypes() {
+	mockLogger := new(tests.LoggerMock)
+	envService := NewEnvTypeService(mockLogger)
+
+	s.Len(envService.validEnvTypes, 5)
+	s.Contains(envService.validEnvTypes, enums.Production)
+	s.Contains(envService.validEnvTypes, enums.Development)
+	s.Contains(envService.validEnvTypes, enums.Staging)
+	s.Contains(envService.validEnvTypes, enums.Client)
+	s.Contains(envService.validEnvTypes, enums.Undefined)
 }

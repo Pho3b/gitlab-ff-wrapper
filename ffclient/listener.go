@@ -1,10 +1,10 @@
-package client
+package ffclient
 
 import (
 	"github.com/pho3b/tiny-logger/shared"
 )
 
-// errorsListener is the struct injected by default into the unleash client
+// errorsListener is the struct injected by default into the unleash ffclient
 // in order to print only error related messages.
 type errorsListener struct {
 	logger shared.LoggerInterface

@@ -22,7 +22,7 @@ func (c *UnleashClientMock) IsEnabled(feature string, options ...unleash.Feature
 	return resArgs[0].(bool)
 }
 
-// FeatureFlagsClientMock is a mock implementation of client.FeatureFlagsClient
+// FeatureFlagsClientMock is a mock implementation of ffclient.FeatureFlagsClient
 type FeatureFlagsClientMock struct {
 	mock.Mock
 }

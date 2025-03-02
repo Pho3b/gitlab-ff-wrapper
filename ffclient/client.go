@@ -1,17 +1,17 @@
-package client
+package ffclient
 
 import (
+	"github.com/pho3b/tiny-logger/logs"
+	"github.com/pho3b/tiny-logger/logs/log_level"
 	"strings"
 
 	"github.com/Unleash/unleash-client-go/v4"
 	"github.com/Unleash/unleash-client-go/v4/context"
-	"github.com/pho3b/gitlab-ff-wrapper/client/config"
 	pubconst "github.com/pho3b/gitlab-ff-wrapper/constants"
 	"github.com/pho3b/gitlab-ff-wrapper/enums"
+	"github.com/pho3b/gitlab-ff-wrapper/ffclient/ffconfig"
 	"github.com/pho3b/gitlab-ff-wrapper/internal/constants"
 	"github.com/pho3b/gitlab-ff-wrapper/internal/service"
-	"github.com/pho3b/tiny-logger/logs"
-	"github.com/pho3b/tiny-logger/logs/log_level"
 	"github.com/pho3b/tiny-logger/shared"
 )
 
@@ -20,7 +20,7 @@ var clientInstance *FeatureFlagsClient = nil
 type FeatureFlagsClient struct {
 	// UnleashClientInterface is an interface that defines the methods used to interact with the Unleash feature flag service.
 	unleashClient UnleashClientInterface
-	// envType represents the environment type (e.g., Production, Staging, Development) that the client is configured for.
+	// envType represents the environment type (e.g., Production, Staging, Development) that the ffclient is configured for.
 	envType enums.EnvType
 	// envTypeVariableName is the name of the environment variable that is used to determine the environment type.
 	envTypeVariableName string
@@ -48,7 +48,7 @@ func (c *FeatureFlagsClient) IsFeatureEnabledForUser(featureName string, userId 
 	)
 }
 
-// GetEnvironmentType returns the EnvironmentType that is currently set in the FeatureFlags client
+// GetEnvironmentType returns the EnvironmentType that is currently set in the FeatureFlags ffclient
 func (c *FeatureFlagsClient) GetEnvironmentType() enums.EnvType {
 	return c.envType
 }
@@ -56,23 +56,19 @@ func (c *FeatureFlagsClient) GetEnvironmentType() enums.EnvType {
 // Init initialized the FeatureFlagsClient instance with default configurations and binds it to the project
 // referred to the given 'projectId' and 'projectUrl'
 //
-// This function initializes the client with the default logger (Warn level),
+// This function initializes the ffclient with the default logger (Warn level),
 // and uses the default environment type variable name from constants.EnvTypeVariableName.
 func Init(projectUrl string, projectId string) {
-	InitWithConfig(config.ClientConfig{ProjectId: projectId, ProjectUrl: projectUrl})
+	InitWithConfig(ffconfig.ClientConfig{ProjectId: projectId, ProjectUrl: projectUrl})
 }
 
-// InitWithConfig initializes the FeatureFlagsClient instance using the provided config.ClientConfig.
+// InitWithConfig initializes the FeatureFlagsClient instance using the provided ffconfig.ClientConfig.
 //
-// This function initializes the client with the provided logger and environment type variable name.
+// This function initializes the ffclient with the provided logger and environment type variable name.
 // If no logger is provided, a default logger with Warn level is created.
 // If no environment type variable name is provided, the default value from constants.EnvTypeVariableName is used.
-// The environment type is determined from the config or the environment variable.
-func InitWithConfig(config config.ClientConfig) {
-	if clientInstance != nil {
-		return
-	}
-
+// The environment type is determined from the ffconfig or the environment variable.
+func InitWithConfig(config ffconfig.ClientConfig) {
 	var logger shared.LoggerInterface
 	var envType enums.EnvType
 	var envTypeVariableName, projectUrl, projectId string
@@ -84,27 +80,38 @@ func InitWithConfig(config config.ClientConfig) {
 			AddDateTime(true)
 	}
 
+	if projectUrl = config.ProjectUrl; projectUrl == "" {
+		logger.Error("ProjectUrl not specified, it cannot be empty")
+		return
+	}
+
+	if projectId = config.ProjectId; projectId == "" {
+		logger.Error("ProjectId not specified, it cannot be empty")
+		return
+	}
+
+	if clientInstance != nil {
+		logger.Warn("FeatureFlagsClient already initialized")
+		return
+	}
+
 	if envTypeVariableName = config.EnvironmentTypeVariableName; config.EnvironmentTypeVariableName == "" {
 		envTypeVariableName = pubconst.EnvTypeVariableName
 	}
 
 	envTypeService := service.NewEnvTypeService(logger)
+	if len(config.ValidEnvironmentTypes) > 0 {
+		for _, validEnvType := range config.ValidEnvironmentTypes {
+			envTypeService.AddValidEnvType(validEnvType)
+		}
+	}
+
 	if envType = config.EnvironmentType; !envTypeService.IsEnvTypeValid(envType) {
 		envType = envTypeService.GetEnvTypeFromEnvironment(envTypeVariableName)
 	}
 
-	if projectUrl = config.ProjectUrl; projectUrl == "" {
-		logger.Error("ProjectUrl not specified and cannot be empty")
-		return
-	}
-
-	if projectId = config.ProjectId; projectId == "" {
-		logger.Error("ProjectId not specified and cannot be empty")
-		return
-	}
-
 	clientInstance = &FeatureFlagsClient{
-		initUnleashClient(logger, envType, projectUrl, projectId),
+		initUnleashClient(logger, envType, projectUrl, projectId, config.AsyncInitialization),
 		envType,
 		envTypeVariableName,
 		logger,
@@ -116,16 +123,17 @@ func Get() *FeatureFlagsClient {
 	return clientInstance
 }
 
-// initUnleashClient initializes and returns a new Unleash client that will be configured to use the
+// initUnleashClient initializes and returns a new Unleash ffclient that will be configured to use the
 // provided logger and environment type.
 //
-// It also sets the necessary configuration options for the Unleash client.
-// If the client fails to initialize, an error message is logged and nil is returned.
+// It also sets the necessary configuration options for the Unleash ffclient.
+// If the ffclient fails to initialize, an error message is logged and nil is returned.
 func initUnleashClient(
 	logger shared.LoggerInterface,
 	envType enums.EnvType,
 	projectUrl string,
 	projectId string,
+	asyncInitialization bool,
 ) UnleashClientInterface {
 	unleashClient, err := unleash.NewClient(
 		unleash.WithUrl(projectUrl),
@@ -137,11 +145,13 @@ func initUnleashClient(
 	)
 
 	if err != nil {
-		logger.Error("Feature Flags client initialization error ", err.Error())
+		logger.Error("Feature Flags ffclient initialization error ", err.Error())
 		return nil
 	}
 
-	unleashClient.WaitForReady()
+	if !asyncInitialization {
+		unleashClient.WaitForReady()
+	}
 
 	return unleashClient
 }
