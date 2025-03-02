@@ -16,8 +16,8 @@ ffclient.Init(YourProjectUrl, YourProjectId)
 
 // Or, initialize it with custom configurations
 ffclient.InitWithConfig(config.ClientConfig{
-	// Project URL and ProjectId can be found in your giltab repository [Deploy -> Feature flags] section
-	// clicking on the 'Configure' button.
+    // Project URL and ProjectId can be found in your giltab repository [Deploy -> Feature flags] section
+    // clicking on the 'Configure' button.
     ProjectUrl                  "https://foo.gitlab.com"
     ProjectId                   "1234"
     Logger:              myCustomLogger, 
