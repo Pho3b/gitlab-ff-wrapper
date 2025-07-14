@@ -1,6 +1,6 @@
 # Feature Flags Client
 
-The purpose of this project is to expose an interface to use the Gitlab Feature-Flags feature across the
+The purpose of this project is to expose an interface to use the Gitlab Feature-Flags feature across
 one Gitlab specific group of repositories.    
 [Feature-Flags](https://docs.gitlab.com/ee/operations/feature_flags.html) is a Gitlab integrated system that gives the
 possibility to dynamically Toggle features in live environments.
